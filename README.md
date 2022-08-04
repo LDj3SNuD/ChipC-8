@@ -11,3 +11,10 @@ https://user-images.githubusercontent.com/35856442/180603076-9b1d199a-4694-41d3-
 https://user-images.githubusercontent.com/35856442/180618159-b8b84453-c37c-45a4-b037-5fe594ef9a9d.mp4
 
 https://user-images.githubusercontent.com/35856442/180602389-d2825186-0f43-464f-993a-078f7b625058.mp4
+
+TODO:
+Octo compatibility.
+(XO-Chip compatibility.)
+
+Rpl registers should be persistent (loaded from file when emulator opens and stored in file when emulator closes).
+Disassembler & Debugger.

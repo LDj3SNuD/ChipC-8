@@ -217,6 +217,7 @@ namespace ChipC_8
         // https://github.com/Chromatophore/HP48-Superchip/blob/master/investigations/quirk_collide.md
         public void DrawSprite(int x, int y, int[] spriteData, int bitsPerRow, out bool isCollision)
         {
+            Trace.Assert(x >= 0 && y >= 0);
             Trace.Assert(spriteData.Length >= 1 && spriteData.Length <= 16);
             Trace.Assert(bitsPerRow == 8 || bitsPerRow == 16);
 

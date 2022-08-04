@@ -1,8 +1,4 @@
-﻿// TODO: Rpl registers should be persistent (loaded from file when emulator opens and stored in file when emulator closes).
-// TODO: Disassembler/assembler/debugger.
-// TODO: Octo compatibility.
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -152,6 +148,36 @@ namespace ChipC_8
                 Program.Write(new String(' ', pad) + str + new String(' ', pad), left: 0, top + 2, ConsoleColor.Gray);
             }
 
+            void Pause()
+            {
+                if (!pause)
+                {
+                    clock.Stop();
+
+                    pause = true;
+
+                    PrintInfo();
+
+                    keypad.Reset(full: false);
+
+                    PrintControls();
+                }
+            }
+
+            void Resume()
+            {
+                if (pause)
+                {
+                    pause = false;
+
+                    PrintInfo();
+
+                    keypad.PrintInit();
+
+                    clock.Start();
+                }
+            }
+
             /**/
 
             if (!TrySetWindowAndBufferSize(2 + gpu.FrameBufferWidth + 2, 6 + gpu.FrameBufferHeight + 2 + Keypad.Height + 1))
@@ -204,7 +230,7 @@ namespace ChipC_8
 
                 if (exitGuest)
                 {
-                    break;
+                    Pause();
                 }
 
                 /**/
@@ -245,37 +271,17 @@ namespace ChipC_8
                         }
 
                         // Pause.
-                        case ConsoleKey.P:
+                        case ConsoleKey.P when !exitGuest:
                         {
-                            if (!pause)
-                            {
-                                clock.Stop();
-
-                                pause = true;
-
-                                PrintInfo();
-
-                                keypad.Reset(full: false);
-
-                                PrintControls();
-                            }
+                            Pause();
 
                             break;
                         }
 
                         // Resume.
-                        case ConsoleKey.Enter:
+                        case ConsoleKey.Enter when !exitGuest:
                         {
-                            if (pause)
-                            {
-                                pause = false;
-
-                                PrintInfo();
-
-                                keypad.PrintInit();
-
-                                clock.Start();
-                            }
+                            Resume();
 
                             break;
                         }
@@ -291,8 +297,11 @@ namespace ChipC_8
 
                                 keypad.PrintInit();
 
-                                foreColor = DefaultForeColor;
-                                backColor = DefaultBackColor;
+                                if (!exitGuest)
+                                {
+                                    foreColor = DefaultForeColor;
+                                    backColor = DefaultBackColor;
+                                }
                             }
 
                             clock.StopAndReset();

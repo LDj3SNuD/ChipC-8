@@ -13,7 +13,12 @@ namespace ChipC_8
         public int DataStart { get; }
 
         public int FontDataStart { get; }
+
         public int HighFontDataStart { get; }
+
+        public int AsciiCharPatternsDataStart { get; }
+        public int AsciiFontDataStart { get; }
+        public int AsciiCharDataStart { get; }
 
         public int CodeDataStart { get; }
         public int CodeDataEnd { get; private set; }
@@ -64,6 +69,8 @@ namespace ChipC_8
 
             _mem = new int[CodeDataEndMax + 1];
 
+            // 5 * 16 = 80 (lo) + 10 * 16 = 160 (hi) + 16 + 3 * 64 = 208 (ascii) + 64 (free) = 512.
+
             int[] fontData = new int[] // Vip.
             {
                 0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -90,21 +97,129 @@ namespace ChipC_8
 
             int[] highFontData = new int[] // SChip.
             {
-		        0x3C, 0x7E, 0xE7, 0xC3, 0xC3, 0xC3, 0xC3, 0xE7, 0x7E, 0x3C, // 0
-		        0x18, 0x38, 0x58, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, // 1
-		        0x3E, 0x7F, 0xC3, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xFF, 0xFF, // 2
-		        0x3C, 0x7E, 0xC3, 0x03, 0x0E, 0x0E, 0x03, 0xC3, 0x7E, 0x3C, // 3
-		        0x06, 0x0E, 0x1E, 0x36, 0x66, 0xC6, 0xFF, 0xFF, 0x06, 0x06, // 4
-		        0xFF, 0xFF, 0xC0, 0xC0, 0xFC, 0xFE, 0x03, 0xC3, 0x7E, 0x3C, // 5
-		        0x3E, 0x7C, 0xE0, 0xC0, 0xFC, 0xFE, 0xC3, 0xC3, 0x7E, 0x3C, // 6
-		        0xFF, 0xFF, 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, // 7
-		        0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // 8
-		        0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C  // 9
+                0x3C, 0x7E, 0xE7, 0xC3, 0xC3, 0xC3, 0xC3, 0xE7, 0x7E, 0x3C, // 0
+                0x18, 0x38, 0x58, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, // 1
+                0x3E, 0x7F, 0xC3, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xFF, 0xFF, // 2
+                0x3C, 0x7E, 0xC3, 0x03, 0x0E, 0x0E, 0x03, 0xC3, 0x7E, 0x3C, // 3
+                0x06, 0x0E, 0x1E, 0x36, 0x66, 0xC6, 0xFF, 0xFF, 0x06, 0x06, // 4
+                0xFF, 0xFF, 0xC0, 0xC0, 0xFC, 0xFE, 0x03, 0xC3, 0x7E, 0x3C, // 5
+                0x3E, 0x7C, 0xE0, 0xC0, 0xFC, 0xFE, 0xC3, 0xC3, 0x7E, 0x3C, // 6
+                0xFF, 0xFF, 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, // 7
+                0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // 8
+                0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C, // 9
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // A
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // B
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // C
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // D
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // E
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // F
             };
 
-            HighFontDataStart = fontData.Length;
+            HighFontDataStart = FontDataStart + fontData.Length;
 
             Array.Copy(highFontData, 0, _mem, HighFontDataStart, highFontData.Length);
+
+            int[] asciiCharPatternsData = new int[] // "Chip-8E".
+            {
+                // 6-bit ASCII character patterns.
+                0x00, // ∙∙∙∙∙∙∙∙
+                0x10, // ∙∙∙•∙∙∙∙
+                0x20, // ∙∙•∙∙∙∙∙
+                0x88, // •∙∙∙•∙∙∙
+                0xA8, // •∙•∙•∙∙∙
+                0x50, // ∙•∙•∙∙∙∙
+                0xF8, // •••••∙∙∙
+                0x70, // ∙•••∙∙∙∙
+                0x80, // •∙∙∙∙∙∙∙
+                0x90, // •∙∙•∙∙∙∙
+                0xA0, // •∙•∙∙∙∙∙
+                0xB0, // •∙••∙∙∙∙
+                0xC0, // ••∙∙∙∙∙∙
+                0xD0, // ••∙•∙∙∙∙
+                0xE0, // •••∙∙∙∙∙
+                0xF0  // ••••∙∙∙∙
+            };
+
+            AsciiCharPatternsDataStart = HighFontDataStart + highFontData.Length;
+
+            Array.Copy(asciiCharPatternsData, 0, _mem, AsciiCharPatternsDataStart, asciiCharPatternsData.Length);
+
+            int[] asciiFontData = new int[] // "Chip-8E".
+            {
+                // 6-bit ASCII characters (45, 23, W1).
+                0x46, 0x3E, 0x56, // @
+                0x99, 0x9F, 0x4F, // A
+                0x5F, 0x57, 0x4F, // B
+                0x8F, 0x88, 0x4F, // C
+                0x5F, 0x55, 0x4F, // D
+                0x8F, 0x8F, 0x4F, // E
+                0x88, 0x8F, 0x4F, // F
+                0x9F, 0x8B, 0x4F, // G
+                0x99, 0x9F, 0x49, // H
+                0x27, 0x22, 0x47, // I
+                0xAE, 0x22, 0x47, // J
+                0xA9, 0xAC, 0x49, // K
+                0x8F, 0x88, 0x48, // L
+                0x43, 0x64, 0x53, // M
+                0x99, 0xDB, 0x49, // N
+                0x9F, 0x99, 0x4F, // O
+                0x88, 0x9F, 0x4F, // P
+                0x9F, 0x9B, 0x4F, // Q
+                0xA9, 0x9F, 0x4F, // R
+                0x1F, 0x8F, 0x4F, // S
+                0x22, 0x22, 0x56, // T
+                0x9F, 0x99, 0x49, // U
+                0x22, 0x55, 0x53, // V
+                0x55, 0x44, 0x54, // W
+                0x53, 0x52, 0x53, // X
+                0x22, 0x52, 0x53, // Y
+                0xCF, 0x12, 0x4F, // Z
+                0x8C, 0x88, 0x3C, // [
+                0x10, 0xC2, 0x40, // \
+                0x2E, 0x22, 0x3E, // ]
+                0x30, 0x25, 0x50, // ^
+                0x06, 0x00, 0x50, // _
+                0x00, 0x00, 0x40, // space
+                0x0C, 0xCC, 0x2C, // !
+                0x00, 0x50, 0x45, // "
+                0x65, 0x65, 0x55, // #
+                0x46, 0x46, 0x56, // $
+                0xDF, 0xBF, 0x4F, // %
+                0x5F, 0xAF, 0x4E, // &
+                0x00, 0x80, 0x18, // '
+                0x21, 0x22, 0x41, // (
+                0x12, 0x11, 0x42, // )
+                0x53, 0x56, 0x53, // *
+                0x22, 0x26, 0x52, // +
+                0x2E, 0x00, 0x30, // ,
+                0x00, 0x06, 0x50, // -
+                0xCC, 0x00, 0x20, // .
+                0xC0, 0x12, 0x40, // /
+                0x9F, 0x99, 0x4F, // 0
+                0x22, 0x22, 0x32, // 1
+                0x8F, 0x1F, 0x4F, // 2
+                0x1F, 0x1F, 0x4F, // 3
+                0x22, 0xAF, 0x4A, // 4
+                0x1F, 0x8F, 0x4F, // 5
+                0x9F, 0x8F, 0x4F, // 6
+                0x11, 0x11, 0x4F, // 7
+                0x9F, 0x9F, 0x4F, // 8
+                0x1F, 0x9F, 0x4F, // 9
+                0x80, 0x80, 0x10, // :
+                0x2E, 0x20, 0x30, // ;
+                0x21, 0x2C, 0x41, // <
+                0xE0, 0xE0, 0x30, // =
+                0x2C, 0x21, 0x4C, // >
+                0x88, 0x1F, 0x4F  // ?
+            };
+
+            AsciiFontDataStart = AsciiCharPatternsDataStart + asciiCharPatternsData.Length;
+
+            Array.Copy(asciiFontData, 0, _mem, AsciiFontDataStart, asciiFontData.Length);
+
+            AsciiCharDataStart = AsciiFontDataStart + asciiFontData.Length;
+
+            /**/
 
             _pc = CodeDataStart - 2;
 
@@ -144,6 +259,8 @@ namespace ChipC_8
 
         public void Reset(byte[] romData)
         {
+            Array.Clear(_mem, AsciiCharDataStart, CodeDataStart - AsciiCharDataStart);
+
             Array.Copy(romData, 0, _mem, CodeDataStart, romData.Length);
 
             Array.Clear(_mem, CodeDataEnd + 1, CodeDataEndMax - CodeDataEnd);
@@ -180,53 +297,61 @@ namespace ChipC_8
             switch ((n3, n2, n1, n0))
             {
                 // Chip-8 Instructions.
-                case (0x0, 0x0, 0xE, 0x0): Clear(out needsSync);          break; // 00E0 - CLS
-                case (0x0, 0x0, 0xE, 0xE): Ret();                         break; // 00EE - RET
-              //case (0x0,   _,   _,   _): CallSys(n210);                 break; // 0nnn - SYS addr
-                case (0x1,   _,   _,   _): JumpU(n210);                   break; // 1nnn - JP addr
-                case (0x2,   _,   _,   _): Call(n210);                    break; // 2nnn - CALL addr
-                case (0x3,   _,   _,   _): SkipIfEqualRegImm(n2, n10);    break; // 3xkk - SE Vx, byte
-                case (0x4,   _,   _,   _): SkipIfNotEqualRegImm(n2, n10); break; // 4xkk - SNE Vx, byte
-                case (0x5,   _,   _, 0x0): SkipIfEqualRegReg(n2, n1);     break; // 5xy0 - SE Vx, Vy
-                case (0x6,   _,   _,   _): LoadRegImm(n2, n10);           break; // 6xkk - LD Vx, byte
-                case (0x7,   _,   _,   _): AddRegImm(n2, n10);            break; // 7xkk - ADD Vx, byte
-                case (0x8,   _,   _, 0x0): LoadRegReg(n2, n1);            break; // 8xy0 - LD Vx, Vy
-                case (0x8,   _,   _, 0x1): OrRegReg(n2, n1);              break; // 8xy1 - OR Vx, Vy
-                case (0x8,   _,   _, 0x2): AndRegReg(n2, n1);             break; // 8xy2 - AND Vx, Vy
-                case (0x8,   _,   _, 0x3): XorRegReg(n2, n1);             break; // 8xy3 - XOR Vx, Vy
-                case (0x8,   _,   _, 0x4): AddRegReg(n2, n1);             break; // 8xy4 - ADD Vx, Vy
-                case (0x8,   _,   _, 0x5): SubRegReg(n2, n1);             break; // 8xy5 - SUB Vx, Vy
-                case (0x8,   _,   _, 0x6): ShrRegReg(n2, n1);             break; // 8xy6 - SHR Vx {, Vy}
-                case (0x8,   _,   _, 0x7): SubNegRegReg(n2, n1);          break; // 8xy7 - SUBN Vx, Vy
-                case (0x8,   _,   _, 0xE): ShlRegReg(n2, n1);             break; // 8xyE - SHL Vx {, Vy}
-                case (0x9,   _,   _, 0x0): SkipIfNotEqualRegReg(n2, n1);  break; // 9xy0 - SNE Vx, Vy
-                case (0xA,   _,   _,   _): SetI(n210);                    break; // Annn - LD I, addr
-                case (0xB,   _,   _,   _): JumpPlusU(n210);               break; // Bnnn - JP V0, addr
-                case (0xC,   _,   _,   _): RandRegImm(n2, n10);           break; // Cxkk - RND Vx, byte
+                case (0x0, 0x0, 0xE, 0x0): Clear(out needsSync);            break; // 00E0 - CLS
+                case (0x0, 0x0, 0xE, 0xE): Ret();                           break; // 00EE - RET
+              //case (0x0,   _,   _,   _): CallSys(n210);                   break; // 0nnn - SYS addr
+                case (0x1,   _,   _,   _): JumpU(n210);                     break; // 1nnn - JP addr
+                case (0x2,   _,   _,   _): Call(n210);                      break; // 2nnn - CALL addr
+                case (0x3,   _,   _,   _): SkipIfEqualRegImm(n2, n10);      break; // 3xkk - SE Vx, byte
+                case (0x4,   _,   _,   _): SkipIfNotEqualRegImm(n2, n10);   break; // 4xkk - SNE Vx, byte
+                case (0x5,   _,   _, 0x0): SkipIfEqualRegReg(n2, n1);       break; // 5xy0 - SE Vx, Vy
+                case (0x6,   _,   _,   _): LoadRegImm(n2, n10);             break; // 6xkk - LD Vx, byte
+                case (0x7,   _,   _,   _): AddRegImm(n2, n10);              break; // 7xkk - ADD Vx, byte
+                case (0x8,   _,   _, 0x0): LoadRegReg(n2, n1);              break; // 8xy0 - LD Vx, Vy
+                case (0x8,   _,   _, 0x1): OrRegReg(n2, n1);                break; // 8xy1 - OR Vx, Vy
+                case (0x8,   _,   _, 0x2): AndRegReg(n2, n1);               break; // 8xy2 - AND Vx, Vy
+                case (0x8,   _,   _, 0x3): XorRegReg(n2, n1);               break; // 8xy3 - XOR Vx, Vy
+                case (0x8,   _,   _, 0x4): AddRegReg(n2, n1);               break; // 8xy4 - ADD Vx, Vy
+                case (0x8,   _,   _, 0x5): SubRegReg(n2, n1);               break; // 8xy5 - SUB Vx, Vy
+                case (0x8,   _,   _, 0x6): ShrRegReg(n2, n1);               break; // 8xy6 - SHR Vx {, Vy}
+                case (0x8,   _,   _, 0x7): SubNegRegReg(n2, n1);            break; // 8xy7 - SUBN Vx, Vy
+                case (0x8,   _,   _, 0xE): ShlRegReg(n2, n1);               break; // 8xyE - SHL Vx {, Vy}
+                case (0x9,   _,   _, 0x0): SkipIfNotEqualRegReg(n2, n1);    break; // 9xy0 - SNE Vx, Vy
+                case (0xA,   _,   _,   _): SetI(n210);                      break; // Annn - LD I, addr
+                case (0xB,   _,   _,   _): JumpPlusU(n210);                 break; // Bnnn - JP V0, addr
+                case (0xC,   _,   _,   _): RandRegImm(n2, n10);             break; // Cxkk - RND Vx, byte
                 case (0xD,   _,   _,   _): DrawSprite(n2, n1, n0, out needsSync); break; // Dxyn - DRW Vx, Vy, nibble
-                case (0xE,   _, 0x9, 0xE): SkipIfKey(n2);                 break; // Ex9E - SKP Vx
-                case (0xE,   _, 0xA, 0x1): SkipIfNotKey(n2);              break; // ExA1 - SKNP Vx
-                case (0xF,   _, 0x0, 0x7): GetDelayTimer(n2);             break; // Fx07 - LD Vx, DT
-                case (0xF,   _, 0x0, 0xA): WaitAnyKey(n2, out needsSync); break; // Fx0A - LD Vx, K
-                case (0xF,   _, 0x1, 0x5): SetDelayTimer(n2);             break; // Fx15 - LD DT, Vx
-                case (0xF,   _, 0x1, 0x8): SetSoundTimer(n2);             break; // Fx18 - LD ST, Vx
-                case (0xF,   _, 0x1, 0xE): AddI(n2);                      break; // Fx1E - ADD I, Vx
-                case (0xF,   _, 0x2, 0x9): LoadFont(n2);                  break; // Fx29 - LD F, Vx
-                case (0xF,   _, 0x3, 0x3): Bcd(n2);                       break; // Fx33 - LD B, Vx
-                case (0xF,   _, 0x5, 0x5): Store(n2);                     break; // Fx55 - LD [I], Vx
-                case (0xF,   _, 0x6, 0x5): Load(n2);                      break; // Fx65 - LD Vx, [I]
+                case (0xE,   _, 0x9, 0xE): SkipIfKey(n2);                   break; // Ex9E - SKP Vx
+                case (0xE,   _, 0xA, 0x1): SkipIfNotKey(n2);                break; // ExA1 - SKNP Vx
+                case (0xF,   _, 0x0, 0x7): GetDelayTimer(n2);               break; // Fx07 - LD Vx, DT
+                case (0xF,   _, 0x0, 0xA): WaitAnyKey(n2, out needsSync);   break; // Fx0A - LD Vx, K
+                case (0xF,   _, 0x1, 0x5): SetDelayTimer(n2);               break; // Fx15 - LD DT, Vx
+                case (0xF,   _, 0x1, 0x8): SetSoundTimer(n2);               break; // Fx18 - LD ST, Vx
+                case (0xF,   _, 0x1, 0xE): AddI(n2);                        break; // Fx1E - ADD I, Vx
+                case (0xF,   _, 0x2, 0x9): LoadFont(n2);                    break; // Fx29 - LD F, Vx
+                case (0xF,   _, 0x3, 0x3): Bcd(n2);                         break; // Fx33 - LD B, Vx
+                case (0xF,   _, 0x5, 0x5): Store(n2);                       break; // Fx55 - LD [I], Vx
+                case (0xF,   _, 0x6, 0x5): Load(n2);                        break; // Fx65 - LD Vx, [I]
 
                 // Super Chip-48 Instructions.
-                case (0x0, 0x0, 0xC,   _): ScrollDown(n0, out needsSync); break; // 00Cn - SCD nibble
-                case (0x0, 0x0, 0xF, 0xB): ScrollRight(out needsSync);    break; // 00FB - SCR
-                case (0x0, 0x0, 0xF, 0xC): ScrollLeft(out needsSync);     break; // 00FC - SCL
-                case (0x0, 0x0, 0xF, 0xD): Exit(out exitGuest);           break; // 00FD - EXIT
-                case (0x0, 0x0, 0xF, 0xE): LowRes(out needsSync);         break; // 00FE - LOW
-                case (0x0, 0x0, 0xF, 0xF): HighRes(out needsSync);        break; // 00FF - HIGH
+                case (0x0, 0x0, 0xC,   _): ScrollDown(n0, out needsSync);   break; // 00Cn - SCD nibble
+                case (0x0, 0x0, 0xF, 0xB): ScrollRight(out needsSync);      break; // 00FB - SCR
+                case (0x0, 0x0, 0xF, 0xC): ScrollLeft(out needsSync);       break; // 00FC - SCL
+                case (0x0, 0x0, 0xF, 0xD): Exit(out exitGuest);             break; // 00FD - EXIT
+                case (0x0, 0x0, 0xF, 0xE): LowRes(out needsSync);           break; // 00FE - LOW
+                case (0x0, 0x0, 0xF, 0xF): HighRes(out needsSync);          break; // 00FF - HIGH
               //case (0xD,   _,   _, 0x0): DrawSprite(n2, n1, n: 0, out needsSync); break; // Dxy0 - DRW Vx, Vy, 0
-                case (0xF,   _, 0x3, 0x0): LoadHighFont(n2);              break; // Fx30 - LD HF, Vx
-                case (0xF,   _, 0x7, 0x5): StoreRpl(n2);                  break; // Fx75 - LD R, Vx
-                case (0xF,   _, 0x8, 0x5): LoadRpl(n2);                   break; // Fx85 - LD Vx, R
+                case (0xF,   _, 0x3, 0x0): LoadHighFont(n2);                break; // Fx30 - LD HF, Vx
+                case (0xF,   _, 0x7, 0x5): StoreRpl(n2);                    break; // Fx75 - LD R, Vx
+                case (0xF,   _, 0x8, 0x5): LoadRpl(n2);                     break; // Fx85 - LD Vx, R
+
+                // "Chip-8E" Instructions.
+                case (0x5,   _,   _, 0x1): SkipIfGreaterThanRegReg(n2, n1); break; // 5xy1 - SGT Vx, Vy
+                case (0x5,   _,   _, 0x2): SkipIfLessThanRegReg(n2, n1);    break; // 5xy2 - SLT Vx, Vy
+                case (0x9,   _,   _, 0x1): MulRegReg(n2, n1);               break; // 9xy1 - MUL Vx, Vy
+                case (0x9,   _,   _, 0x2): DivRegReg(n2, n1);               break; // 9xy2 - DIV Vx, Vy
+                case (0x9,   _,   _, 0x3): BcdWord(n2, n1);                 break; // 9xy3 - BCD Vx, Vy
+                case (0xF,   _, 0x9, 0x4): LoadAsciiFont(n2);               break; // Fx94 - LD A, Vx
 
                 default: throw new NotImplementedException($"Not Implemented Instruction: 0x{n3:X1}{n2:X1}{n1:X1}{n0:X1}.");
             }
@@ -243,7 +368,7 @@ namespace ChipC_8
             n1 = (n10 >> 4) & 0b1111;
             n0 = n10 & 0b1111;
 
-            n210 = n2 << 8 | n1 << 4 | n0;
+            n210 = (n2 << 8) | (n1 << 4) | n0;
         }
 
         /* Chip-8 Instructions. */
@@ -583,7 +708,7 @@ namespace ChipC_8
 
                     for (int i = 0, j = 0; i < n; i++, j += 2)
                     {
-                        spriteData[i] = ReadMemory(_i + j) << 8 | ReadMemory(_i + j + 1);
+                        spriteData[i] = (ReadMemory(_i + j) << 8) | ReadMemory(_i + j + 1);
                     }
 
                     _gpu.DrawSprite(vX, vY, spriteData, bitsPerRow: 16, out bool isCollision);
@@ -678,23 +803,23 @@ namespace ChipC_8
 
             Trace.Assert(vX <= 0xF);
 
-            int fontAddress = FontDataStart + vX * 5;
+            int charAddress = FontDataStart + vX * 5;
 
-            WriteI(fontAddress);
+            WriteI(charAddress);
         }
 
-        // FX33 | BCD VX | CHIP-8 | Convert that word to BCD and store the 3 digits at memory location I through I+2. I does not change.
+        // FX33 | BCD VX | CHIP-8 | Convert that byte to BCD and store the 3 digits at memory location I through I+2. I does not change.
         private void Bcd(int xIdx)
         {
             int vX = ReadRegister(xIdx);
 
             int hundreds = vX / 100;
             int tens = (vX % 100) / 10;
-            int units = vX % 10;
+            int ones = vX % 10;
 
             WriteMemory(_i, hundreds);
             WriteMemory(_i + 1, tens);
-            WriteMemory(_i + 2, units);
+            WriteMemory(_i + 2, ones);
         }
 
         // FX55 | LD [I], VX | CHIP-8 | Store registers V0 through VX in memory starting at location I.
@@ -807,11 +932,11 @@ namespace ChipC_8
         {
             int vX = ReadRegister(xIdx);
 
-            Trace.Assert(vX <= 0xF); // vX <= 9.
+            Trace.Assert(vX <= 0xF);
 
-            int fontAddress = HighFontDataStart + vX * 10;
+            int charAddress = HighFontDataStart + vX * 10;
 
-            WriteI(fontAddress);
+            WriteI(charAddress);
         }
 
         // FX75 | LD R, VX | SCHIP-8 | Store V0 through VX to HP-48 RPL user flags (X <= 7).
@@ -836,6 +961,108 @@ namespace ChipC_8
             }
         }
 
+        /* "Chip-8E" Instructions. */
+
+        // 5XY1 | SGT VX, VY | CHIP-8E | Skip the next instruction if register VX is greater than VY.
+        private void SkipIfGreaterThanRegReg(int xIdx, int yIdx)
+        {
+            int vX = ReadRegister(xIdx);
+            int vY = ReadRegister(yIdx);
+
+            if (vX > vY)
+            {
+                IncPc();
+            }
+        }
+
+        // 5XY2 | SLT VX, VY | CHIP-8E | Skip the next instruction if register VX is less than VY.
+        private void SkipIfLessThanRegReg(int xIdx, int yIdx)
+        {
+            int vX = ReadRegister(xIdx);
+            int vY = ReadRegister(yIdx);
+
+            if (vX < vY)
+            {
+                IncPc();
+            }
+        }
+
+        // 9XY1 | MUL VX, VY | VX * VY; VF contains the most significant byte, VX contains the least significant.
+        private void MulRegReg(int xIdx, int yIdx)
+        {
+            int vX = ReadRegister(xIdx);
+            int vY = ReadRegister(yIdx);
+
+            int mul = vX * vY;
+
+            WriteRegister(index: 15, (mul >> 8) & 255);
+            WriteRegister(xIdx, mul & 255);
+        }
+
+        // 9XY2 | DIV VX, VY | VX / VY; VF contains the remainder and VX contains the quotient.
+        private void DivRegReg(int xIdx, int yIdx)
+        {
+            int vX = ReadRegister(xIdx);
+            int vY = ReadRegister(yIdx);
+
+            int quo = vX / vY;
+            int rem = vX % vY;
+
+            WriteRegister(index: 15, rem);
+            WriteRegister(xIdx, quo);
+        }
+
+        // 9XY3 | BCD VX, VY | CHIP-8E | Store BCD representation of the 16-bit word VX, VY (where VX is the most significant byte) at I through I+4; I remains unchanged.
+        private void BcdWord(int xIdx, int yIdx)
+        {
+            int vX = ReadRegister(xIdx);
+            int vY = ReadRegister(yIdx);
+
+            int word = (vX << 8) | vY;
+
+            int tenThousands = word / 10000;
+            int thousands = (word % 10000) / 1000;
+            int hundreds = (word % 1000) / 100;
+            int tens = (word % 100) / 10;
+            int ones = word % 10;
+
+            WriteMemory(_i, tenThousands);
+            WriteMemory(_i + 1, thousands);
+            WriteMemory(_i + 2, hundreds);
+            WriteMemory(_i + 3, tens);
+            WriteMemory(_i + 4, ones);
+        }
+
+        // FX94 | LD A, VX | CHIP-8E | Load I with the font sprite of the 6-bit ASCII value found in VX; V0 is set to the symbol length.
+        private void LoadAsciiFont(int xIdx) // Not for use with DRW Vx, Vy, 0 (Dxy0).
+        {
+            int vX = ReadRegister(xIdx);
+
+            Trace.Assert(vX <= 63);
+
+            int b45 = ReadMemory(AsciiFontDataStart + vX * 3);
+            int b23 = ReadMemory(AsciiFontDataStart + vX * 3 + 1);
+            int bw1 = ReadMemory(AsciiFontDataStart + vX * 3 + 2);
+
+            int charWidth = (bw1 >> 4) & 0b1111;
+            int p1 = ReadMemory(AsciiCharPatternsDataStart + (bw1 & 0b1111));
+
+            int p2 = ReadMemory(AsciiCharPatternsDataStart + ((b23 >> 4) & 0b1111));
+            int p3 = ReadMemory(AsciiCharPatternsDataStart + (b23 & 0b1111));
+
+            int p4 = ReadMemory(AsciiCharPatternsDataStart + ((b45 >> 4) & 0b1111));
+            int p5 = ReadMemory(AsciiCharPatternsDataStart + (b45 & 0b1111));
+
+            WriteMemory(AsciiCharDataStart, p1);
+            WriteMemory(AsciiCharDataStart + 1, p2);
+            WriteMemory(AsciiCharDataStart + 2, p3);
+            WriteMemory(AsciiCharDataStart + 3, p4);
+            WriteMemory(AsciiCharDataStart + 4, p5);
+
+            WriteI(AsciiCharDataStart);
+            WriteRegister(index: 0, charWidth);
+        }
+
         /**/
 
         public int ReadMemory(int address)
@@ -851,7 +1078,7 @@ namespace ChipC_8
 
         private void WriteMemory(int address, int value)
         {
-            Trace.Assert(address >= CodeDataStart && address <= CodeDataEndMax);
+            Trace.Assert(address >= AsciiCharDataStart && address <= CodeDataEndMax);
             Trace.Assert(value >= 0 && value <= 255);
 
             _mem[address] = value;

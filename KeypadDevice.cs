@@ -34,10 +34,16 @@ namespace ChipC_8
 
     public static class KeypadDevice
     {
-        [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
-        private static extern short GetKeyState(int keyCode);
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
 
-        private static int VirtualKeyFromKey(Key key)
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        private static int GetVirtualKeyFromKey(Key key)
         {
 	        return key switch
             {
@@ -70,19 +76,29 @@ namespace ChipC_8
 		        throw new ArgumentOutOfRangeException(nameof(key));
 	        }
 
-        	KeyStates keyStates = KeyStates.None;
+            IntPtr consoleWindowHandle = GetConsoleWindow();
 
-        	short keyState = GetKeyState(VirtualKeyFromKey(key));
+            if (consoleWindowHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException(nameof(consoleWindowHandle));
+            }
 
-        	if (((keyState >> 15) & 1) == 1)
-        	{
-        		keyStates |= KeyStates.Down;
-        	}
+            KeyStates keyStates = KeyStates.None;
 
-        	if ((keyState & 1) == 1)
-        	{
-        		keyStates |= KeyStates.Toggled;
-        	}
+            if (GetForegroundWindow() == consoleWindowHandle)
+            {
+        	    short keyState = GetAsyncKeyState(GetVirtualKeyFromKey(key));
+
+        	    if (((keyState >> 15) & 1) == 1)
+        	    {
+        		    keyStates |= KeyStates.Down;
+        	    }
+
+        	    if ((keyState & 1) == 1)
+        	    {
+        		    keyStates |= KeyStates.Toggled;
+        	    }
+            }
 
         	return keyStates;
         }
