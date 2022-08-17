@@ -1,0 +1,373 @@
+# FB8_2K.ch8: A two-keys variant of Flappy Bird for Chip-8 (SChip), written in Octo.
+# FB8_1K.ch8: A Flappy Bird clone for Chip-8 (SChip), written in Octo.
+
+# Keys: W/UpArrow; S/DownArrow. It matters how long, not how often, the keys are pressed.
+# A speed of 100 cycles/frame is recommended.
+
+# Bird sprites taken from: https://laroldsjubilantjunkyard.com/tutorials/recreating-gameboy-games/flappy-bird/
+
+:const AccCoeff 1
+
+:alias px_bird v4
+:alias py_bird v5
+
+:alias vy_bird v6
+
+:alias px v7
+:alias py v8
+
+:alias scroll_speed v9 # Min: 0 (+- 90°), Med: 1 (+- 45°), Max: 2 (0°).
+
+:alias bird_sprite_offset va # bird_0: 0, bird_45_up: 32, bird_90_up: 64, bird_45_down: 96, bird_90_down: 128.
+
+:alias scroll_cnt vb
+
+:alias coll_cnt vc
+
+:alias pipe_num vd
+
+:alias tmp ve
+
+: main
+	hires
+
+	px_bird := 8
+	py_bird := 24
+
+	vy_bird := 0x80
+
+	bird_sprite_offset := 0
+	DrawBird
+
+	scroll_cnt := 0
+
+	coll_cnt := 0
+
+	pipe_num := 1
+	DrawPipes
+
+	loop
+		tmp := 4 # Two keys mode.
+		#tmp := 6 # One key mode.
+		delay := tmp
+
+		loop
+			tmp := delay
+			if tmp != 0 then
+		again
+
+		#
+
+		DrawBird
+
+		#
+
+		UpdateVerticalSpeedByVerticalAcceleration_TwoKeysMode
+		#UpdateVerticalSpeedByVerticalAcceleration_OneKeyMode
+
+		#
+
+		UpdateVerticalPositionByVerticalSpeed
+
+		#
+
+		GetScrollSpeedByVerticalSpeed
+
+		#
+
+		if scroll_speed == 1 then scroll-left
+		if scroll_speed == 2 then scroll-left
+		if scroll_speed == 2 then scroll-left
+
+		scroll_cnt += scroll_speed
+
+		#
+
+		DrawBird
+
+		#
+
+		if vf != 0 begin
+			coll_cnt += 1
+		else
+			coll_cnt := 0
+		end
+
+		tmp := scroll_speed
+		tmp += 1
+
+		if coll_cnt >= tmp begin
+			tmp := 15
+			buzzer := tmp
+			delay := tmp
+
+			loop
+				tmp := delay
+				if tmp != 0 then
+			again
+
+			jump main
+		end
+
+		#
+
+		if pipe_num > 0 then tmp := 26
+		if pipe_num > 8 then tmp := 22
+		if pipe_num > 16 then tmp := 18
+		if pipe_num > 32 then tmp := 14
+		if pipe_num > 64 then tmp := 18
+		if pipe_num > 128 then tmp := 22
+
+		if scroll_cnt >= tmp begin
+			scroll_cnt := 0
+
+			pipe_num += 1
+			DrawPipes
+		end
+	again
+
+: UpdateVerticalSpeedByVerticalAcceleration_TwoKeysMode
+	tmp := OCTO_KEY_W
+	if tmp key begin
+		vy_bird -= AccCoeff
+		if vy_bird < 0x78 then vy_bird := 0x78
+	end
+
+	tmp := OCTO_KEY_S
+	if tmp key begin
+		vy_bird += AccCoeff
+		if vy_bird > 0x88 then vy_bird := 0x88
+	end
+
+	return
+
+: UpdateVerticalSpeedByVerticalAcceleration_OneKeyMode
+	tmp := OCTO_KEY_W
+	if tmp key begin
+		vy_bird -= AccCoeff
+		if vy_bird < 0x78 then vy_bird := 0x78
+	else
+		vy_bird += AccCoeff
+		if vy_bird > 0x88 then vy_bird := 0x88
+	end
+
+	return
+
+: UpdateVerticalPositionByVerticalSpeed
+	tmp := vy_bird
+	tmp -= 0x80
+
+	py_bird += tmp
+
+	if py_bird > 0x7F begin
+		py_bird := 0
+
+		vy_bird := 0x80
+
+		return
+	end
+
+	if py_bird > 48 begin
+		py_bird := 48
+
+		vy_bird := 0x80
+
+		return
+	end
+
+	return
+
+: GetScrollSpeedByVerticalSpeed
+	if vy_bird >= 0x78 begin
+		if vy_bird <= 0x7A begin
+			scroll_speed := 0
+			bird_sprite_offset := 64
+
+			return
+		end
+	end
+
+	if vy_bird >= 0x7B begin
+		if vy_bird <= 0x7D begin
+			scroll_speed := 1
+			bird_sprite_offset := 32
+
+			return
+		end
+	end
+
+	if vy_bird >= 0x7E begin
+		if vy_bird <= 0x82 begin
+			scroll_speed := 2
+			bird_sprite_offset := 0
+
+			return
+		end
+	end
+
+	if vy_bird >= 0x83 begin
+		if vy_bird <= 0x85 begin
+			scroll_speed := 1
+			bird_sprite_offset := 96
+
+			return
+		end
+	end
+
+	if vy_bird >= 0x86 begin
+		if vy_bird <= 0x88 begin
+			scroll_speed := 0
+			bird_sprite_offset := 128
+
+			return
+		end
+	end
+
+	return # exit.
+
+: DrawBird
+	i := bird_0
+	i += bird_sprite_offset
+	sprite px_bird py_bird 0
+
+	return
+
+: DrawPipes
+	tmp := random 0x0F
+
+	i := pipe_masks
+	i += tmp
+	load v0
+	v2 := v0
+
+	i := pipe_gate_up_masks
+	i += tmp
+	load v0
+	v3 := v0
+
+	i := pipe_gate_down_masks
+	i += tmp
+	load v0
+	tmp := v0
+
+	i := bcd_h
+	bcd pipe_num
+	i := bcd_t
+	load v1
+
+	px := 112
+	py := 0
+
+	loop
+		v2 >>= v2
+		if vf == 1 begin
+			i := pipe
+			sprite px py 0
+		end
+
+		v3 >>= v3
+		if vf == 1 begin
+			py -= 1
+
+			i := pipe_gate_up
+			sprite px py 0
+
+			py += 1
+
+			#
+
+			px += 3
+			py += 1
+
+			i := hex v0 # Tens.
+			sprite px py 5
+
+			px += 6
+
+			i := hex v1 # Ones.
+			sprite px py 5
+
+			px -= 9
+			py -= 1
+		end
+
+		tmp >>= tmp
+		if vf == 1 begin
+			i := pipe_gate_down
+			sprite px py 0
+
+			#
+
+			px += 3
+			py += 2
+
+			i := hex v0 # Tens.
+			sprite px py 5
+
+			px += 6
+
+			i := hex v1 # Ones.
+			sprite px py 5
+
+			px -= 9
+			py -= 2
+		end
+
+		py += 8
+
+		if py != 64 then
+	again
+
+	return
+
+: bird_0
+	0x00 0x00 0x00 0x00 0x07 0xE0 0x18 0x90 0x21 0x08 0x41 0x14 0x41 0x14 0x78 0x84 0xFC 0x7E 0xF8 0x81 0xF1 0x7E 0xF0 0x84 0x40 0x78 0x3F 0x80 0x00 0x00 0x00 0x00
+: bird_45_up
+	0x00 0x00 0x00 0x00 0x07 0x80 0x1D 0x40 0x34 0xB8 0x64 0x24 0x43 0x4C 0x40 0x94 0x78 0xEC 0x7C 0x58 0x7C 0x30 0x7C 0x60 0x3C 0xC0 0x1F 0x00 0x00 0x00 0x00 0x00
+: bird_90_up
+	0x00 0x00 0x00 0x80 0x01 0x40 0x0F 0x60 0x11 0x50 0x2D 0x58 0x21 0x58 0x32 0xA8 0x2C 0x48 0x20 0x08 0x21 0xC8 0x13 0xE8 0x0B 0xE8 0x07 0xF0 0x01 0xE0 0x00 0x00
+: bird_45_down
+	0x00 0x00 0x00 0x00 0x3F 0xC0 0x7C 0x30 0x7E 0x78 0x7E 0x84 0x3C 0x84 0x21 0xB4 0x23 0x44 0x12 0xB4 0x0A 0x58 0x07 0x28 0x01 0xF0 0x00 0x00 0x00 0x00 0x00 0x00
+: bird_90_down
+	0x00 0x00 0x0F 0x00 0x1F 0xC0 0x2F 0xA0 0x2F 0x90 0x27 0x08 0x20 0x08 0x24 0x68 0x2A 0x98 0x35 0x08 0x35 0x68 0x15 0x10 0x0D 0xE0 0x05 0x00 0x02 0x00 0x00 0x00
+
+: pipe
+	0x30 0x0C 0x30 0x0C 0x30 0x0C 0x3F 0xFC 0x3F 0xFC 0x30 0x0C 0x30 0x0C 0x30 0x0C 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: pipe_gate_up
+	0x40 0x02 0xE0 0x07 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xFF 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: pipe_gate_down
+	0xFF 0xFF 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xC0 0x03 0xE0 0x07 0x40 0x02 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+# Each byte is a bit mask where 1 indicates the presence of a part of a pipe (8 bits high) starting with the least significant bit for y starting with 0.
+# 2H is the minimum distance of 2 * 8 pixels between the gates of a pair of pipes.
+: pipe_masks
+	0xF8 0xE1 0xC3 0x87 0x1F # 2H.
+	0xF0 0xC1 0x83 0x0F # 3H.
+	0xE0 0x81 0x07 # 4H.
+	0xC0 0x03 # 5H.
+	0x80 0x01 # 6H.
+
+: pipe_gate_up_masks
+	0x00 0x02 0x04 0x08 0x20 # 2H.
+	0x00 0x02 0x04 0x10 # 3H.
+	0x00 0x02 0x08 # 4H.
+	0x00 0x04 # 5H.
+	0x00 0x02 # 6H.
+
+: pipe_gate_down_masks
+	0x04 0x10 0x20 0x40 0x00 # 2H.
+	0x08 0x20 0x40 0x00 # 3H.
+	0x10 0x40 0x00 # 4H.
+	0x20 0x00 # 5H.
+	0x40 0x00 # 6H.
+
+: bcd_h
+	0x00
+: bcd_t
+	0x00
+: bcd_o
+	0x00
+: bcd_pad
+	0x00
