@@ -8,7 +8,7 @@ namespace ChipC_8
         public const int Width = 45;
         public const int Height = 19;
 
-        public List<Key> Bindings { get; }
+        public List<ConsoleKey> Bindings { get; }
 
         public bool Waiting { get; set; }
 
@@ -24,22 +24,22 @@ namespace ChipC_8
         {
             Bindings = new();
 
-            Bindings.Add(Key.X);  // 0
-            Bindings.Add(Key.D1); // 1
-            Bindings.Add(Key.D2); // 2
-            Bindings.Add(Key.D3); // 3
-            Bindings.Add(Key.Q);  // 4
-            Bindings.Add(Key.W);  // 5
-            Bindings.Add(Key.E);  // 6
-            Bindings.Add(Key.A);  // 7
-            Bindings.Add(Key.S);  // 8
-            Bindings.Add(Key.D);  // 9
-            Bindings.Add(Key.Z);  // A
-            Bindings.Add(Key.C);  // B
-            Bindings.Add(Key.D4); // C
-            Bindings.Add(Key.R);  // D
-            Bindings.Add(Key.F);  // E
-            Bindings.Add(Key.V);  // F
+            Bindings.Add(ConsoleKey.X);  // 0
+            Bindings.Add(ConsoleKey.D1); // 1
+            Bindings.Add(ConsoleKey.D2); // 2
+            Bindings.Add(ConsoleKey.D3); // 3
+            Bindings.Add(ConsoleKey.Q);  // 4
+            Bindings.Add(ConsoleKey.W);  // 5
+            Bindings.Add(ConsoleKey.E);  // 6
+            Bindings.Add(ConsoleKey.A);  // 7
+            Bindings.Add(ConsoleKey.S);  // 8
+            Bindings.Add(ConsoleKey.D);  // 9
+            Bindings.Add(ConsoleKey.Z);  // A
+            Bindings.Add(ConsoleKey.C);  // B
+            Bindings.Add(ConsoleKey.D4); // C
+            Bindings.Add(ConsoleKey.R);  // D
+            Bindings.Add(ConsoleKey.F);  // E
+            Bindings.Add(ConsoleKey.V);  // F
 
             _keys = new();
             _keyHints = new();
