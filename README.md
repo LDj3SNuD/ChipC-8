@@ -1,7 +1,7 @@
 # ChipC-8
 A Chip-8/SChip ("Chip-8E" compliant) emulator written in C# as a console application.
 
-https://user-images.githubusercontent.com/35856442/185181277-500069be-e9d4-44bf-9878-53f7271f0bce.mp4
+https://user-images.githubusercontent.com/35856442/185256584-99bfc25c-9780-47e0-a4c3-61b35ae0ce00.mp4
 
 https://user-images.githubusercontent.com/35856442/180579418-2c926898-da3d-4354-9012-e1f1ce4cba20.mp4
 
