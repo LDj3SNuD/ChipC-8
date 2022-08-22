@@ -247,7 +247,8 @@ namespace ChipC_8
                         {
                             if (!pause) clock.Stop();
 
-                            speed = Math.Clamp(speed + (key == ConsoleKey.Add ? 1 : -1), 1, 100);
+                            speed += (key == ConsoleKey.Add ? (speed < 100 ? 1 : 10) : -(speed <= 100 ? 1 : 10));
+                            speed = Math.Clamp(speed, 1, 1000);
 
                             PrintInfo();
 

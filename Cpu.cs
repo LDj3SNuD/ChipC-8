@@ -658,6 +658,9 @@ namespace ChipC_8
         // DXY0 | DRW VX, VX, 0 | SCHIP-8 | When in high res mode show a 16x16 sprite at (VX, VY).
         private void DrawSprite(int xIdx, int yIdx, int n, out bool needsSync)
         {
+            // Octo: quirks.loresTallSprite: If true, draws an 8x16 sprite in low-resolution mode.
+            const bool LoresTallSprite = false;
+
             int vX = ReadRegister(xIdx);
             int vY = ReadRegister(yIdx);
 
@@ -689,7 +692,7 @@ namespace ChipC_8
             {
                 n = 16;
 
-                if (_gpu.SChipMode == SChipMode.LowRes)
+                if (_gpu.SChipMode == SChipMode.LowRes && LoresTallSprite)
                 {
                     int[] spriteData = new int[n];
 
